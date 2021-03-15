@@ -4,19 +4,20 @@ import numpy as np
 import heapq
 import time
 import numpy as np
+
 global posWalls, posGoals
+
 class PriorityQueue:
     """Define a PriorityQueue data structure that will be used"""
     def  __init__(self):
         self.Heap = []
         self.Count = 0
-        self.len = 0
 
     def push(self, item, priority):
         entry = (priority, self.Count, item)
         heapq.heappush(self.Heap, entry)
         self.Count += 1
-
+    
     def pop(self):
         (_, _, item) = heapq.heappop(self.Heap)
         return item
@@ -25,7 +26,6 @@ class PriorityQueue:
         return len(self.Heap) == 0
 
 """Load puzzles and define the rules of sokoban"""
-
 
 def transferToGameState(layout):
     """Transfer the layout of initial puzzle"""
@@ -48,7 +48,6 @@ def transferToGameState(layout):
     # print(layout)
     return np.array(layout)
 
-
 def transferToGameState2(layout, player_pos):
     """Transfer the layout of initial puzzle"""
     maxColsNum = max([len(x) for x in layout])
@@ -60,33 +59,25 @@ def transferToGameState2(layout, player_pos):
     temp[player_pos[1]][player_pos[0]] = 2
     return temp
 
-
 def PosOfPlayer(gameState):
     """Return the position of agent"""
     return tuple(np.argwhere(gameState == 2)[0]) # e.g. (2, 2)
-
 
 def PosOfBoxes(gameState):
     """Return the positions of boxes"""
     return tuple(tuple(x) for x in np.argwhere((gameState == 3) | (gameState == 5))) # e.g. ((2, 3), (3, 4), (4, 4), (6, 1), (6, 4), (6, 5))
 
-
 def PosOfWalls(gameState):
     """Return the positions of walls"""
     return tuple(tuple(x) for x in np.argwhere(gameState == 1)) # e.g. like those above
-
 
 def PosOfGoals(gameState):
     """Return the positions of goals"""
     return tuple(tuple(x) for x in np.argwhere((gameState == 4) | (gameState == 5))) # e.g. like those above
 
-
 def isEndState(posBox):
     """Check if all boxes are on the goals (i.e. pass the game)"""
-    if sorted(posBox) == sorted(posGoals):
-        print(sorted(posBox), sorted(posGoals))
     return sorted(posBox) == sorted(posGoals)
-
 
 def isLegalAction(action, posPlayer, posBox):
     """Check if the given action is legal"""
@@ -96,7 +87,6 @@ def isLegalAction(action, posPlayer, posBox):
     else:
         x1, y1 = xPlayer + action[0], yPlayer + action[1]
     return (x1, y1) not in posBox + posWalls
-
 
 def legalActions(posPlayer, posBox):
     """Return all legal actions for the agent in the current game state"""
@@ -114,7 +104,6 @@ def legalActions(posPlayer, posBox):
         else: 
             continue     
     return tuple(tuple(x) for x in legalActions) # e.g. ((0, -1, 'l'), (0, 1, 'R'))
-
 
 def updateState(posPlayer, posBox, action):
     """Return updated game state after an action is taken"""
@@ -158,7 +147,8 @@ def isFailed(posBox):
 
 def depthFirstSearch(gameState):
     """Implement depthFirstSearch approach"""
-    beginBox = PosOfBoxes(gameState)
+    beginBox = PosOfBoxes(gameState) 
+    
     beginPlayer = PosOfPlayer(gameState)
 
     startState = (beginPlayer, beginBox)
@@ -189,9 +179,9 @@ def breadthFirstSearch(gameState):
     beginBox = PosOfBoxes(gameState)
     beginPlayer = PosOfPlayer(gameState)
 
-    startState = (beginPlayer, beginBox) # e.g. ((2, 2), ((2, 3), (3, 4), (4, 4), (6, 1), (6, 4), (6, 5)))
-    frontier = collections.deque([[startState]]) # store states
-    actions = collections.deque([[0]]) # store actions
+    startState = (beginPlayer, beginBox)
+    frontier = collections.deque([[startState]])
+    actions = collections.deque([[0]])
     exploredSet = set()
     temp = []
     ### Implement breadthFirstSearch here
@@ -200,7 +190,7 @@ def breadthFirstSearch(gameState):
         node_action = actions.popleft()
 
         if isEndState(node[-1][-1]):
-            temp = node_action[1:]
+            return node_action[1:]
             break
 
         if node[-1] not in exploredSet:
@@ -209,19 +199,33 @@ def breadthFirstSearch(gameState):
                 newPosPlayer, newPosBox = updateState(node[-1][0], node[-1][1], action)
                 if isFailed(newPosBox):
                     continue
-                frontier.append(node + [(newPosPlayer, newPosBox)])
+                frontier.append([(newPosPlayer, newPosBox)])
                 actions.append(node_action + [action[-1]])
-
     return temp
 
-    
-def cost(actions):
+def calDis(posBox):
+    res = 0
+    for i in posBox:
+        x_b, y_b = i
+        minDis = 9999999999
+        vis = []
+        x, y = 0, 0
+        for j in posGoals:
+            if j in vis:
+                continue
+            x_t, y_t = j 
+            if(minDis > abs(x_b - x_t) + abs(y_b - y_t)):
+                x, y = x_t, y_t
+                minDis = abs(x_b - x_t) + abs(y_b - y_t)
+        res += minDis
+        vis += [(x, y)]
+    return res
+
+def cost(actions, posBox):
     """A cost function"""
-    maxLength = 0
-    for x in range(1, len(actions)):
-        if actions[x].islower():
-            maxLength+=1
-    return maxLength
+    maxLength = actions.count('l') + actions.count('r') + actions.count('d') + actions.count('u')  
+    maxDis = calDis(posBox)
+    return (maxDis**2) + (maxLength**2)
     #return len([x for x in actions if x.islower()])
 
 def uniformCostSearch(gameState):
@@ -232,20 +236,21 @@ def uniformCostSearch(gameState):
     startState = (beginPlayer, beginBox)
     frontier = PriorityQueue()
     frontier.push([startState], 0)
-    exploredSet = set()
+   
     actions = PriorityQueue()
     actions.push([0], 0)
+
+    exploredSet = set()
+
     temp = []
     ### Implement uniform cost search here
 
     while frontier.isEmpty() == False:
         node = frontier.pop()
         node_action = actions.pop()
-        print(node, node_action)
+    
 
         if isEndState(node[-1][-1]):
-            print('Success')
-            print(node[-1][-1])
             temp += node_action[1:]
             break
 
@@ -255,10 +260,11 @@ def uniformCostSearch(gameState):
                 newPosPlayer, newPosBox = updateState(node[-1][0], node[-1][1], action)
                 if isFailed(newPosBox):
                     continue
-
-                frontier.push(node + [(newPosPlayer, newPosBox)], cost(node_action + [action[-1]]))
-                actions.push(node_action + [action[-1]], cost(node_action + [action[-1]]))
-
+            
+                cst = cost(node_action + [action[-1]], newPosBox)
+                frontier.push([(newPosPlayer, newPosBox)], cst)
+                actions.push(node_action + [action[-1]], cst)
+                 
     return temp
 
 """Read command"""
@@ -285,6 +291,7 @@ def get_move(layout, player_pos, method):
     gameState = transferToGameState2(layout, player_pos)
     posWalls = PosOfWalls(gameState)
     posGoals = PosOfGoals(gameState)
+ 
     if method == 'dfs':
         result = depthFirstSearch(gameState)
     elif method == 'bfs':

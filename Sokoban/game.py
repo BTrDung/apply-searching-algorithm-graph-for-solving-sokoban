@@ -31,7 +31,7 @@ class Game:
         self.window = window
         self.load_textures()
         self.player = None
-        self.index_level = 1
+        self.index_level = 21
         self.load_level()
         self.play = True
         self.scores = Scores(self)
@@ -73,8 +73,8 @@ class Game:
                 self.player.move(event.key, self.level, self.player_interface)
                 if self.has_win():
                     self.index_level += 1
-                    if (self.index_level == 17):
-                        self.index_level = 1
+                    if (self.index_level == 22):
+                        self.index_level = 19
                     self.scores.save()
                     self.load_level()
             if event.key == K_r:
@@ -113,8 +113,8 @@ class Game:
         return nb_missing_target == 0
 
     def auto_move(self):
-        strategy = get_move(self.level.structure[:-1], self.level.position_player, 'dfs')
-        strategy = get_move(self.level.structure[:-1], self.level.position_player, 'bfs')
+        # strategy = get_move(self.level.structure[:-1], self.level.position_player, 'dfs')
+        # strategy = get_move(self.level.structure[:-1], self.level.position_player, 'bfs')
         strategy = get_move(self.level.structure[:-1], self.level.position_player, 'ucs')
         # with open("assets/sokobanSolver/Solverlevel_" + str(self.index_level) + ".txt", 'w+') as solver_file:
         #     for listitem in strategy:
