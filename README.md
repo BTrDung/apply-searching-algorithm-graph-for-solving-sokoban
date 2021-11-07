@@ -1,2 +1,2 @@
-# CS106 - Artificial Intelligence 
-
+### How to run
+```python3 Sokoban.py```
